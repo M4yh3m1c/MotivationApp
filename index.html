@@ -97,6 +97,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:14px}
 <div id="app" class="wrap" data-own></div>
 <div id="toast" class="toast" data-own></div>
 <script id="app-state" type="application/json" data-own>{"rev":100,"start":"2024-10-01","end":"2027-08-31","exam":"","examName":"","log":{},"claimed":[],"note":"Ich bin so stolz auf dich, wie du Studium, Familie und Alltag unter einen Hut bekommst.\nBis August 2027 – und dann feiern wir! ❤️\nTobi","milestones":[{"id":"k1","text":"Erste Klausur ausgesucht & angemeldet","done":false},{"id":"k2","text":"Lernplan für die erste Klausur steht","done":false},{"id":"k3","text":"Eine Probe- oder Altklausur unter echten Bedingungen gemacht","done":false},{"id":"k4","text":"Erste Klausur geschrieben 💪","done":false},{"id":"m2","text":"Thema für die Abschlussarbeit festlegen","done":false},{"id":"m3","text":"Betreuung gefunden & Arbeit angemeldet","done":false},{"id":"m4","text":"Gliederung / Exposé fertig","done":false},{"id":"m5","text":"Rohfassung geschrieben","done":false},{"id":"m6","text":"Abschlussarbeit abgegeben","done":false},{"id":"m7","text":"Letzte Prüfung / Kolloquium","done":false},{"id":"m8","text":"Abschluss feiern 🎉","done":false}]}</script>
+<script src="sprueche.js" data-own></script>
 <script id="app-main" data-own>
 (function(){
 // Pristine copy of the page, used to save state as a new version
@@ -124,7 +125,6 @@ const QUOTES=[
  "Der beste Zeitpunkt anzufangen ist jetzt. Der zweitbeste: nach dem Kaffee.",
  "Du lernst nicht nur für eine Note, sondern für deinen Beruf.",
  "Auch ein zäher Lerntag ist ein Lerntag.",
- "Schokolade ist erlaubt. Aufgeben nicht.",
  "Du bist heute näher am Ziel als gestern.",
  "Konzentrier dich auf die nächste Aufgabe, nicht auf den ganzen Berg.",
  "Der Plot-Twist dieser Geschichte: Du ziehst es durch.",
@@ -232,14 +232,30 @@ function importData(f){
   r.readAsText(f);
 }
 
+// ---- Tobis Spruch des Tages ----
+function dailyQuote(t){
+  const T=window.TOBI_SPRUECHE;
+  if(state.exam){const n=Math.round((parse(state.exam)-t)/DAY);const k=T&&T.klausur;
+    if(n===0)return {txt:(k&&k.heute)||'Heute ist Klausurtag! Du schaffst das. 💪',tobi:true};
+    if(n===1)return {txt:(k&&k.vorher)||'Morgen ist deine Klausur. Früh schlafen – ich glaub an dich.',tobi:true};}
+  if(T&&Array.isArray(T.taeglich)&&T.taeglich.length){
+    const b=T.besondere||{},iso=key(t);
+    if(b[iso])return {txt:b[iso],tobi:true};
+    if(b[iso.slice(5)])return {txt:b[iso.slice(5)],tobi:true};
+    const L=T.taeglich,i=Math.round((t-parse(T.start||'2026-11-19'))/DAY);
+    return {txt:L[((i%L.length)+L.length)%L.length],tobi:true};
+  }
+  const doy=Math.floor((t-new Date(t.getFullYear(),0,0))/DAY);
+  return {txt:QUOTES[doy%QUOTES.length],tobi:false};
+}
+
 let editingNote=false;
 function render(){
   const t=today0(),start=parse(state.start),end=parse(state.end);
   const left=Math.max(0,Math.ceil((end-t)/DAY));
   const pct=Math.min(100,Math.max(0,(t-start)/(end-start)*100));
   const C=2*Math.PI*54,off=C*(1-pct/100);
-  const doy=Math.floor((t-new Date(t.getFullYear(),0,0))/DAY);
-  const quote=QUOTES[doy%QUOTES.length];
+  const quote=dailyQuote(t);
   const hours=totalHours(),st=streak(),todayMin=minutes(key(t));
   const allDone=state.milestones.length&&state.milestones.every(m=>m.done);
   const doneCount=state.milestones.filter(m=>m.done).length;
@@ -252,7 +268,7 @@ function render(){
   <h1>${greet}, Sabrina ✨</h1>
   <div class="sub">${t.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})} · Medienpädagogik</div>
 
-  <div class="card quote"><p>„${esc(quote)}“</p><small>Gedanke des Tages</small></div>
+  <div class="card quote"><p>${quote.tobi?esc(quote.txt):'„'+esc(quote.txt)+'“'}</p><small>${quote.tobi?'Von Tobi · Spruch des Tages':'Gedanke des Tages'}</small></div>
 
   <div class="card"><div class="count">
     <div class="ring"><svg width="128" height="128"><circle cx="64" cy="64" r="54" fill="none" stroke="#efe4f2" stroke-width="12"/><circle cx="64" cy="64" r="54" fill="none" stroke="#5b2a6e" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}"/></svg>
