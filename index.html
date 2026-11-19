@@ -293,10 +293,10 @@ async function disablePush(){if(!confirm('Erinnerungen auf diesem Gerät ausscha
 function pushCard(){
   const st=push.state;if(st==='checking'||st==='nosw')return '';
   const body={
-    on:`<p class="tag" style="font-size:14px;margin:0 0 10px">✓ Aktiv. Jeden Vormittag um 10 Uhr fragt Tobi nach, ob du heute schon gelernt hast. Hast du schon etwas eingetragen, gibt's stattdessen Lob.</p>
+    on:`<p class="tag" style="font-size:14px;margin:0 0 10px">✓ Aktiv. Um 10 Uhr fragt Tobi nach, ob du heute schon gelernt hast – und um 19 Uhr gibt's Lob für alles, was du eingetragen hast.</p>
       <div class="row" style="justify-content:flex-start"><button class="btn small" data-act="pushcode">Code an Tobi schicken</button><button class="btn-ghost small" data-act="pushtest">Testen</button><button class="btn-ghost small" data-act="pushoff">Ausschalten</button></div>
       <div class="tag" style="margin-top:8px">Den Code braucht Tobi einmal, damit die Erinnerungen bei dir ankommen.</div>`,
-    off:`<p class="tag" style="font-size:14px;margin:0 0 10px">Jeden Vormittag um 10 Uhr eine kleine Nachricht: „Heute schon gelernt?“ – oder Lob, wenn du schon fleißig warst.</p>
+    off:`<p class="tag" style="font-size:14px;margin:0 0 10px">Um 10 Uhr eine kleine Nachricht: „Heute schon gelernt?“ – und um 19 Uhr Lob, wenn du fleißig warst.</p>
       <button class="btn small" data-act="pushon">Erinnerungen aktivieren</button>`,
     install:`<p class="tag" style="font-size:14px;margin:0">Auf dem iPhone klappt das nur mit der App auf dem Home-Bildschirm: In Safari auf <b>Teilen</b> → <b>„Zum Home-Bildschirm“</b> tippen und die App dann von dort öffnen.</p>`,
     denied:`<p class="tag" style="font-size:14px;margin:0">Mitteilungen sind blockiert. Erlauben kannst du sie in den iPhone-Einstellungen unter <b>Mitteilungen → Endspurt</b>.</p>`,

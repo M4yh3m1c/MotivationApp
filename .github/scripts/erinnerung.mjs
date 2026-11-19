@@ -1,24 +1,29 @@
-// Verschickt die tägliche Erinnerung an alle eingetragenen Geräte.
+// Verschickt die Erinnerung (10 Uhr) bzw. das Abend-Lob (19 Uhr) an alle eingetragenen Geräte.
 // Den genauen Text wählt das iPhone selbst (sw.js), je nachdem ob heute schon gelernt wurde.
 import webpush from 'web-push';
 
 const PUBLIC_KEY = 'BJH5XcaBsAiLvmbAIDe1pHchNBZ56e3GiMevmgIndZsLLUWZS-t7LX8vtWLOJriKzfcMgf-Gun2DARpH9yWVCak';
 const SUBJECT = 'https://m4yh3m1c.github.io/MotivationApp/';
-const STUNDE = 10; // Uhrzeit in Berlin
+// Uhrzeiten in Berlin und welche Nachricht dann kommt
+const ZEITEN = { 10: 'morgen', 19: 'abend' };
 
 const { VAPID_PRIVATE_KEY, PUSH_SUBSCRIPTIONS, SCHEDULE, TEXT } = process.env;
+let art = process.env.ART || 'morgen';
 
-// Beim geplanten Lauf nur senden, wenn es in Berlin gerade die richtige Stunde ist (Sommer-/Winterzeit)
+// Beim geplanten Lauf: Welche Berliner Uhrzeit ist das gerade (Sommer-/Winterzeit)?
 if (SCHEDULE) {
   const utcStunde = Number(SCHEDULE.split(' ')[1]);
   const jetzt = new Date();
   const berlin = Number(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Berlin' }).format(jetzt));
   const offset = (berlin - jetzt.getUTCHours() + 24) % 24;
-  if ((utcStunde + offset) % 24 !== STUNDE) {
-    console.log(`Lauf für ${utcStunde} Uhr UTC übersprungen – in Berlin ist das gerade nicht ${STUNDE} Uhr.`);
+  const stunde = (utcStunde + offset) % 24;
+  if (!ZEITEN[stunde]) {
+    console.log(`Lauf für ${utcStunde} Uhr UTC übersprungen – das ist in Berlin gerade ${stunde} Uhr.`);
     process.exit(0);
   }
+  art = ZEITEN[stunde];
 }
+console.log(`Nachricht: ${art}`);
 
 if (!VAPID_PRIVATE_KEY || !PUSH_SUBSCRIPTIONS) {
   console.log('Secrets VAPID_PRIVATE_KEY und/oder PUSH_SUBSCRIPTIONS fehlen noch – nichts zu tun.');
@@ -35,7 +40,7 @@ try {
 }
 
 webpush.setVapidDetails(SUBJECT, PUBLIC_KEY, VAPID_PRIVATE_KEY);
-const payload = JSON.stringify(TEXT ? { body: TEXT } : { typ: 'erinnerung' });
+const payload = JSON.stringify(TEXT ? { body: TEXT, typ: art } : { typ: art });
 
 let ok = 0;
 for (const [i, sub] of subs.entries()) {
