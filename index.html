@@ -425,6 +425,13 @@ document.addEventListener('click',e=>{
   else if(a==='msdel'){state.milestones=state.milestones.filter(x=>x.id!==id);save();render();}
   else if(a==='claim'){state.claimed=state.claimed.includes(id)?state.claimed.filter(x=>x!==id):[...state.claimed,id];save();render();}
   else if(a==='examclear'){state.exam='';save();render();}
+  else if(a==='export'){exportData();}
+  else if(a==='import'){$('#impfile').click();}
+  else if(a==='share'){shareProgress();}
+  else if(a==='pushon'){enablePush();}
+  else if(a==='pushcode'){sendCode();}
+  else if(a==='pushtest'){testPush();}
+  else if(a==='pushoff'){disablePush();}
 });
 document.addEventListener('submit',e=>{if(e.target.id!=='msform')return;e.preventDefault();const v=$('#msin').value.trim();if(!v)return;state.milestones.push({id:'m'+Date.now(),text:v,done:false});save();render();});
 document.addEventListener('change',e=>{
