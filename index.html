@@ -301,10 +301,10 @@ function pushCard(){
   return `<div class="card"><h2>🔔 Erinnerung</h2>${body}</div>`;
 }
 
-let settingsOpen=false;
+let settingsOpen=false,renderedDay='';
 let editingNote=false;
 function render(){
-  const t=today0(),start=parse(state.start),end=parse(state.end);
+  const t=today0(),start=parse(state.start),end=parse(state.end);renderedDay=key(t);
   const left=Math.max(0,Math.ceil((end-t)/DAY));
   const pct=Math.min(100,Math.max(0,(t-start)/(end-start)*100));
   const C=2*Math.PI*54,off=C*(1-pct/100);
@@ -424,6 +424,11 @@ document.addEventListener('change',e=>{
   if(e.target.id==='ename'){state.examName=e.target.value.trim();save();}
   if(e.target.id==='edate'&&e.target.value){const nm=$('#ename');if(nm)state.examName=nm.value.trim();state.exam=e.target.value;save();render();}
 });
+// Neuer Tag, während die App im Hintergrund war: Spruch, Countdown & Co. aktualisieren
+function refreshIfNewDay(){if(document.visibilityState!=='hidden'&&key(today0())!==renderedDay){editingNote=false;editingRewards=false;render();writeStatus();}}
+document.addEventListener('visibilitychange',refreshIfNewDay);
+window.addEventListener('pageshow',refreshIfNewDay);
+setInterval(refreshIfNewDay,60000);
 document.addEventListener('toggle',e=>{if(e.target.id==='setdet')settingsOpen=e.target.open;},true);
 render();
 initPush();
