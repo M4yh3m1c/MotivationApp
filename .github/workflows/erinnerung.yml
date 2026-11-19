@@ -1,0 +1,37 @@
+name: Tägliche Erinnerung
+
+# Schickt Sabrina jeden Vormittag um 10 Uhr (deutsche Zeit) eine Push-Benachrichtigung.
+# Zwei Zeitpläne, weil GitHub in UTC rechnet: 8 Uhr UTC = 10 Uhr Sommerzeit, 9 Uhr UTC = 10 Uhr Winterzeit.
+# Das Skript schickt nur bei dem Lauf, der gerade 10 Uhr in Berlin entspricht.
+#
+# Benötigte Secrets (Settings → Secrets and variables → Actions):
+#   VAPID_PRIVATE_KEY   – privater Schlüssel (nur einmal einrichten)
+#   PUSH_SUBSCRIPTIONS  – der Code aus der App („Code für Tobi“); mehrere Geräte als JSON-Liste [ {...}, {...} ]
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 'Eigener Text (leer lassen für die normale Erinnerung)'
+        required: false
+        default: ''
+
+jobs:
+  erinnerung:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-package-lock web-push@3.6.7
+      - run: node .github/scripts/erinnerung.mjs
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
+          SCHEDULE: ${{ github.event.schedule }}
+          TEXT: ${{ github.event.inputs.text }}

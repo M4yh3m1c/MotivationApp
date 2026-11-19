@@ -97,6 +97,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:14px}
 <div id="app" class="wrap" data-own></div>
 <div id="toast" class="toast" data-own></div>
 <script id="app-state" type="application/json" data-own>{"rev":100,"start":"2024-10-01","end":"2027-08-31","exam":"","examName":"","log":{},"claimed":[],"note":"Ich bin so stolz auf dich, wie du Studium, Familie und Alltag unter einen Hut bekommst.\nBis August 2027 – und dann feiern wir! ❤️\nTobi","milestones":[{"id":"k1","text":"Erste Klausur ausgesucht & angemeldet","done":false},{"id":"k2","text":"Lernplan für die erste Klausur steht","done":false},{"id":"k3","text":"Eine Probe- oder Altklausur unter echten Bedingungen gemacht","done":false},{"id":"k4","text":"Erste Klausur geschrieben 💪","done":false},{"id":"m2","text":"Thema für die Abschlussarbeit festlegen","done":false},{"id":"m3","text":"Betreuung gefunden & Arbeit angemeldet","done":false},{"id":"m4","text":"Gliederung / Exposé fertig","done":false},{"id":"m5","text":"Rohfassung geschrieben","done":false},{"id":"m6","text":"Abschlussarbeit abgegeben","done":false},{"id":"m7","text":"Letzte Prüfung / Kolloquium","done":false},{"id":"m8","text":"Abschluss feiern 🎉","done":false}]}</script>
+<script src="sprueche.js" data-own></script>
 <script id="app-main" data-own>
 (function(){
 // Pristine copy of the page, used to save state as a new version
@@ -124,8 +125,8 @@ const QUOTES=[
  "Der beste Zeitpunkt anzufangen ist jetzt. Der zweitbeste: nach dem Kaffee.",
  "Du lernst nicht nur für eine Note, sondern für deinen Beruf.",
  "Auch ein zäher Lerntag ist ein Lerntag.",
- "Schokolade ist erlaubt. Aufgeben nicht.",
  "Du bist heute näher am Ziel als gestern.",
+ "Schokolade ist erlaubt. Aufgeben nicht.",
  "Konzentrier dich auf die nächste Aufgabe, nicht auf den ganzen Berg.",
  "Der Plot-Twist dieser Geschichte: Du ziehst es durch.",
  "Nicht jeder Tag muss produktiv sein. Aber jeder Tag zählt.",
@@ -169,7 +170,7 @@ const fmtDate=d=>d.toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'
 let art=null,readOnly=false,dirty=false,pubTimer=null;
 function connect(){if(window.claude&&window.claude.use){window.claude.use('artifact').then(a=>{art=a;if(dirty)schedule();}).catch(()=>{});return true;}return false;}
 if(!connect())window.addEventListener('load',connect,{once:true});
-function save(){state.rev=(state.rev||0)+1;try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}dirty=true;schedule();}
+function save(){state.rev=(state.rev||0)+1;try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}writeStatus();dirty=true;schedule();}
 function schedule(){if(!art||readOnly)return;clearTimeout(pubTimer);pubTimer=setTimeout(doPublish,1500);}
 function doPublish(){
   if(timer.running){pubTimer=setTimeout(doPublish,5000);return;}
@@ -194,14 +195,142 @@ setInterval(()=>{if(!timer.running)return;if(timer.end-Date.now()<=0){timer.runn
 
 let toastT;function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3200);}
 
+// ---- export / import ----
+async function exportData(){
+  state.lastExport=key(today0());save();
+  const json=JSON.stringify({app:'sabrina-endspurt',version:1,exported:new Date().toISOString(),state},null,2);
+  const name='endspurt-sicherung-'+key(today0())+'.json';
+  let file=null;try{file=new File([json],name,{type:'application/json'});}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'Endspurt-Sicherung'});toast('Sicherung erstellt ✓');render();return;}
+    catch(e){if(e&&e.name==='AbortError'){render();return;}}
+  }
+  const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+  toast('Sicherung heruntergeladen ✓');render();
+}
+function validState(s){return s&&typeof s==='object'&&typeof s.start==='string'&&typeof s.end==='string'&&s.log&&typeof s.log==='object'&&Array.isArray(s.milestones)&&Array.isArray(s.claimed);}
+function importData(f){
+  const r=new FileReader();
+  r.onload=()=>{
+    let d;try{d=JSON.parse(r.result);}catch(e){toast('Die Datei konnte nicht gelesen werden.');return;}
+    const s=d&&d.state?d.state:d;
+    if(!validState(s)){toast('Das ist keine gültige Endspurt-Sicherung.');return;}
+    const h=(Object.values(s.log).reduce((a,b)=>a+(+b||0),0)/60).toFixed(1).replace('.',',');
+    const when=d.exported?' vom '+new Date(d.exported).toLocaleDateString('de-DE'):'';
+    if(!confirm('Sicherung'+when+' laden?\n\n'+h+' Std gelernt, '+s.milestones.filter(m=>m.done).length+'/'+s.milestones.length+' Meilensteine.\n\nDer aktuelle Stand auf diesem Gerät wird ersetzt.'))return;
+    const rev=Math.max(state.rev||0,s.rev||0);
+    state=s;state.rev=rev;
+    if(!Array.isArray(state.rewards)||state.rewardsV!==2){state.rewards=DEFAULT_REWARDS.map(x=>({...x}));state.rewardsV=2;}
+    if(typeof state.note!=='string')state.note='';
+    if(typeof state.exam!=='string')state.exam='';
+    if(typeof state.examName!=='string')state.examName='';
+    editingRewards=false;editingNote=false;
+    save();render();toast('Sicherung geladen ✓');
+  };
+  r.onerror=()=>toast('Die Datei konnte nicht gelesen werden.');
+  r.readAsText(f);
+}
+
+// ---- Tobis Spruch des Tages ----
+function dailyQuote(t){
+  const T=window.TOBI_SPRUECHE;
+  if(state.exam){const n=Math.round((parse(state.exam)-t)/DAY);const k=T&&T.klausur;
+    if(n===0)return {txt:(k&&k.heute)||'Heute ist Klausurtag! Du schaffst das. 💪',tobi:true};
+    if(n===1)return {txt:(k&&k.vorher)||'Morgen ist deine Klausur. Früh schlafen – ich glaub an dich.',tobi:true};}
+  if(T&&Array.isArray(T.taeglich)&&T.taeglich.length){
+    const b=T.besondere||{},iso=key(t);
+    if(b[iso])return {txt:b[iso],tobi:true};
+    if(b[iso.slice(5)])return {txt:b[iso.slice(5)],tobi:true};
+    const L=T.taeglich,i=Math.round((t-parse(T.start||'2026-11-19'))/DAY);
+    return {txt:L[((i%L.length)+L.length)%L.length],tobi:true};
+  }
+  const doy=Math.floor((t-new Date(t.getFullYear(),0,0))/DAY);
+  return {txt:QUOTES[doy%QUOTES.length],tobi:false};
+}
+
+// ---- Erinnerungen (Push) ----
+const VAPID_PUBLIC='BJH5XcaBsAiLvmbAIDe1pHchNBZ56e3GiMevmgIndZsLLUWZS-t7LX8vtWLOJriKzfcMgf-Gun2DARpH9yWVCak';
+const swOK='serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost');
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+let swReg=null;const push={state:'checking',sub:null};
+function b64u(s){s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);const r=atob(s);return Uint8Array.from(r,c=>c.charCodeAt(0));}
+function writeStatus(){
+  if(!swOK||!window.caches)return;const t=today0();
+  const url=new URL('endspurt-status.json',swReg?swReg.scope:location.href).href;
+  caches.open('endspurt-status').then(c=>c.put(url,new Response(JSON.stringify({date:key(t),minutes:minutes(key(t)),streak:streak()}),{headers:{'Content-Type':'application/json'}}))).catch(()=>{});
+}
+async function initPush(){
+  if(!swOK){push.state='nosw';return;}
+  try{swReg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;}catch(e){push.state='nosw';render();return;}
+  writeStatus();
+  if(!('PushManager' in window)||!('Notification' in window))push.state=isIOS&&!standalone?'install':'unsupported';
+  else if(Notification.permission==='denied')push.state='denied';
+  else{try{push.sub=await swReg.pushManager.getSubscription();}catch(e){}push.state=push.sub?'on':'off';}
+  render();
+}
+async function enablePush(){
+  try{
+    const p=await Notification.requestPermission();
+    if(p!=='granted'){push.state=p==='denied'?'denied':'off';render();toast('Ohne Erlaubnis kann die App keine Erinnerungen schicken.');return;}
+    push.sub=await swReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+    push.state='on';render();toast('Erinnerungen aktiviert ✓ Jetzt noch den Code an Tobi schicken.');
+  }catch(e){toast('Hat nicht geklappt: '+(e&&e.message||e));}
+}
+async function sendCode(){
+  if(!push.sub)return;const code=JSON.stringify(push.sub);
+  if(navigator.share){try{await navigator.share({text:code});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  try{await navigator.clipboard.writeText(code);toast('Code kopiert ✓ Schick ihn Tobi.');}catch(e){prompt('Diesen Code an Tobi schicken:',code);}
+}
+async function testPush(){try{await swReg.showNotification('Endspurt',{body:'So sieht die Erinnerung aus, Maus. ❤️',icon:'icon-192.png',tag:'endspurt-test'});}catch(e){toast('Test hat nicht geklappt: '+(e&&e.message||e));}}
+async function disablePush(){if(!confirm('Erinnerungen auf diesem Gerät ausschalten?'))return;try{await push.sub.unsubscribe();}catch(e){}push.sub=null;push.state='off';render();toast('Erinnerungen ausgeschaltet.');}
+function pushCard(){
+  const st=push.state;if(st==='checking'||st==='nosw')return '';
+  const body={
+    on:`<p class="tag" style="font-size:14px;margin:0 0 10px">✓ Aktiv. Jeden Vormittag um 10 Uhr fragt Tobi nach, ob du heute schon gelernt hast. Hast du schon etwas eingetragen, gibt's stattdessen Lob.</p>
+      <div class="row" style="justify-content:flex-start"><button class="btn small" data-act="pushcode">Code an Tobi schicken</button><button class="btn-ghost small" data-act="pushtest">Testen</button><button class="btn-ghost small" data-act="pushoff">Ausschalten</button></div>
+      <div class="tag" style="margin-top:8px">Den Code braucht Tobi einmal, damit die Erinnerungen bei dir ankommen.</div>`,
+    off:`<p class="tag" style="font-size:14px;margin:0 0 10px">Jeden Vormittag um 10 Uhr eine kleine Nachricht: „Heute schon gelernt?“ – oder Lob, wenn du schon fleißig warst.</p>
+      <button class="btn small" data-act="pushon">Erinnerungen aktivieren</button>`,
+    install:`<p class="tag" style="font-size:14px;margin:0">Auf dem iPhone klappt das nur mit der App auf dem Home-Bildschirm: In Safari auf <b>Teilen</b> → <b>„Zum Home-Bildschirm“</b> tippen und die App dann von dort öffnen.</p>`,
+    denied:`<p class="tag" style="font-size:14px;margin:0">Mitteilungen sind blockiert. Erlauben kannst du sie in den iPhone-Einstellungen unter <b>Mitteilungen → Endspurt</b>.</p>`,
+    unsupported:`<p class="tag" style="font-size:14px;margin:0">Dieses Gerät unterstützt keine Benachrichtigungen. Auf dem iPhone braucht es iOS 16.4 oder neuer.</p>`
+  }[st]||'';
+  return `<div class="card"><h2>🔔 Erinnerung</h2>${body}</div>`;
+}
+
+// ---- Fortschritt teilen ----
+function progressText(){
+  const t=today0(),f=n=>n.toFixed(1).replace('.',',');
+  let week=0;for(let i=0;i<7;i++)week+=minutes(key(new Date(t-i*DAY)));
+  const st=streak(),done=state.milestones.filter(m=>m.done).length,next=state.milestones.find(m=>!m.done);
+  const left=Math.max(0,Math.ceil((parse(state.end)-t)/DAY));
+  const L=['Mein Endspurt-Stand 📚 ('+t.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'numeric'})+')',
+    'Heute: '+minutes(key(t))+' Min',
+    'Letzte 7 Tage: '+f(week/60)+' Std',
+    'Gesamt: '+f(totalHours())+' Std',
+    'Am Stück: '+st+' '+(st===1?'Tag':'Tage'),
+    'Meilensteine: '+done+'/'+state.milestones.length+(next?' – als Nächstes: '+next.text:' – alle geschafft! 🎉')];
+  if(state.exam){const n=Math.ceil((parse(state.exam)-t)/DAY);if(n>=0)L.push('Klausur'+(state.examName?' '+state.examName:'')+': '+(n===0?'heute!':'in '+n+' '+(n===1?'Tag':'Tagen')));}
+  L.push('Noch '+left+' Tage bis zum Abschluss');
+  return L.join('\n');
+}
+async function shareProgress(){
+  const txt=progressText();
+  if(navigator.share){try{await navigator.share({text:txt});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  try{await navigator.clipboard.writeText(txt);toast('Kopiert ✓ Jetzt einfach bei Tobi einfügen.');}catch(e){prompt('Diesen Text an Tobi schicken:',txt);}
+}
+
+let settingsOpen=false,renderedDay='';
 let editingNote=false;
 function render(){
-  const t=today0(),start=parse(state.start),end=parse(state.end);
+  const t=today0(),start=parse(state.start),end=parse(state.end);renderedDay=key(t);
   const left=Math.max(0,Math.ceil((end-t)/DAY));
   const pct=Math.min(100,Math.max(0,(t-start)/(end-start)*100));
   const C=2*Math.PI*54,off=C*(1-pct/100);
-  const doy=Math.floor((t-new Date(t.getFullYear(),0,0))/DAY);
-  const quote=QUOTES[doy%QUOTES.length];
+  const quote=dailyQuote(t);
   const hours=totalHours(),st=streak(),todayMin=minutes(key(t));
   const allDone=state.milestones.length&&state.milestones.every(m=>m.done);
   const doneCount=state.milestones.filter(m=>m.done).length;
@@ -214,7 +343,7 @@ function render(){
   <h1>${greet}, Sabrina ✨</h1>
   <div class="sub">${t.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})} · Medienpädagogik</div>
 
-  <div class="card quote"><p>„${esc(quote)}“</p><small>Gedanke des Tages</small></div>
+  <div class="card quote"><p>${quote.tobi?esc(quote.txt):'„'+esc(quote.txt)+'“'}</p><small>${quote.tobi?'Von Tobi · Spruch des Tages':'Gedanke des Tages'}</small></div>
 
   <div class="card"><div class="count">
     <div class="ring"><svg width="128" height="128"><circle cx="64" cy="64" r="54" fill="none" stroke="#efe4f2" stroke-width="12"/><circle cx="64" cy="64" r="54" fill="none" stroke="#5b2a6e" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}"/></svg>
@@ -246,6 +375,7 @@ function render(){
   <div class="card"><h2>🌱 Deine Woche</h2>
     <div class="streak"><div><b>${st}</b><span>${st===1?'Tag':'Tage'} am Stück</span></div><div><b>${hours.toFixed(1).replace('.',',')}</b><span>Stunden gesamt</span></div><div><b>${doneCount}/${state.milestones.length}</b><span>Meilensteine</span></div></div>
     <div class="bars">${days.map((x,i)=>`<div class="bar ${i===6?'is-today':''}"><i class="${x.m?'':'zero'}" style="height:${x.m?Math.max(6,x.m/maxM*70):4}px"></i><span>${wd[x.d.getDay()]}</span></div>`).join('')}</div>
+    <div class="row" style="margin-top:12px"><button class="btn-ghost small" data-act="share">📤 Fortschritt mit Tobi teilen</button></div>
   </div>
 
   <div class="card"><h2 style="justify-content:space-between"><span>🎁 Belohnungen</span><button class="btn-ghost small" data-act="${editingRewards?'rewsave':'rewedit'}">${editingRewards?'Fertig':'Bearbeiten'}</button></h2>
@@ -269,9 +399,17 @@ function render(){
       :`<p>${esc(state.note)}</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn-ghost small" data-act="noteedit">Bearbeiten</button></div>`}
   </div>
 
-  <div class="card"><details><summary>Einstellungen</summary><div class="set">
+  ${pushCard()}
+
+  <div class="card"><details id="setdet" ${settingsOpen?'open':''}><summary>Einstellungen</summary><div class="set">
     <label>Studienbeginn<input type="date" id="sstart" value="${state.start}"></label>
     <label>Geplanter Abschluss<input type="date" id="send" value="${state.end}"></label>
+    <div style="border-top:1px dashed var(--line);padding-top:12px;margin-top:4px">
+      <div class="tag" style="font-size:14px;margin-bottom:8px">Sicherung: Dein Fortschritt liegt nur auf diesem Gerät. Exportier ihn ab und zu, zum Beispiel in die Dateien-App oder an Tobi.</div>
+      <div class="row" style="justify-content:flex-start"><button class="btn small" data-act="export">Exportieren</button><button class="btn-ghost small" data-act="import">Importieren</button></div>
+      ${state.lastExport?`<div class="tag" style="margin-top:8px">Zuletzt exportiert: ${fmtDate(parse(state.lastExport))}</div>`:''}
+      <input type="file" id="impfile" accept="application/json,.json" style="display:none">
+    </div>
   </div></details></div>
   ${readOnly?'<div class="ro">Fortschritt wird nur in diesem Browser gespeichert.</div>':''}`;
   updateTimer();
@@ -291,18 +429,33 @@ document.addEventListener('click',e=>{
   else if(a==='rewsave'){document.querySelectorAll('[data-rt]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rt);if(r&&i.value.trim())r.t=i.value.trim();});
     document.querySelectorAll('[data-rh]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rh);const v=Math.round(+i.value);if(r&&v>0)r.h=v;});
     state.rewards.sort((a,b)=>(a.ms?-1:b.ms?1:0)||((a.h??1e9)-(b.h??1e9)));editingRewards=false;save();render();}
+  else if(a==='export'){exportData();}
+  else if(a==='share'){shareProgress();}
+  else if(a==='pushon'){enablePush();}
+  else if(a==='pushcode'){sendCode();}
+  else if(a==='pushtest'){testPush();}
+  else if(a==='pushoff'){disablePush();}
+  else if(a==='import'){$('#impfile').click();}
   else if(a==='examclear'){state.exam='';save();render();}
   else if(a==='noteedit'){editingNote=true;render();$('#notein').focus();}
   else if(a==='notesave'){state.note=$('#notein').value.trim();editingNote=false;save();render();}
 });
 document.addEventListener('submit',e=>{if(e.target.id!=='msform')return;e.preventDefault();const v=$('#msin').value.trim();if(!v)return;state.milestones.push({id:'m'+Date.now(),text:v,done:false});save();render();});
 document.addEventListener('change',e=>{
+  if(e.target.id==='impfile'){const f=e.target.files&&e.target.files[0];e.target.value='';if(f)importData(f);return;}
   if(e.target.id==='sstart'&&e.target.value){state.start=e.target.value;save();render();}
   if(e.target.id==='send'&&e.target.value){state.end=e.target.value;save();render();}
   if(e.target.id==='ename'){state.examName=e.target.value.trim();save();}
   if(e.target.id==='edate'&&e.target.value){const nm=$('#ename');if(nm)state.examName=nm.value.trim();state.exam=e.target.value;save();render();}
 });
+// Neuer Tag, während die App im Hintergrund war: Spruch, Countdown & Co. aktualisieren
+function refreshIfNewDay(){if(document.visibilityState!=='hidden'&&key(today0())!==renderedDay){editingNote=false;editingRewards=false;render();writeStatus();}}
+document.addEventListener('visibilitychange',refreshIfNewDay);
+window.addEventListener('pageshow',refreshIfNewDay);
+setInterval(refreshIfNewDay,60000);
+document.addEventListener('toggle',e=>{if(e.target.id==='setdet')settingsOpen=e.target.open;},true);
 render();
+initPush();
 })();
 </script>
 </body>
