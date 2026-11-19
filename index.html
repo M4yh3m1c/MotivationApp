@@ -301,6 +301,28 @@ function pushCard(){
   return `<div class="card"><h2>🔔 Erinnerung</h2>${body}</div>`;
 }
 
+// ---- Fortschritt teilen ----
+function progressText(){
+  const t=today0(),f=n=>n.toFixed(1).replace('.',',');
+  let week=0;for(let i=0;i<7;i++)week+=minutes(key(new Date(t-i*DAY)));
+  const st=streak(),done=state.milestones.filter(m=>m.done).length,next=state.milestones.find(m=>!m.done);
+  const left=Math.max(0,Math.ceil((parse(state.end)-t)/DAY));
+  const L=['Mein Endspurt-Stand 📚 ('+t.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'numeric'})+')',
+    'Heute: '+minutes(key(t))+' Min',
+    'Letzte 7 Tage: '+f(week/60)+' Std',
+    'Gesamt: '+f(totalHours())+' Std',
+    'Am Stück: '+st+' '+(st===1?'Tag':'Tage'),
+    'Meilensteine: '+done+'/'+state.milestones.length+(next?' – als Nächstes: '+next.text:' – alle geschafft! 🎉')];
+  if(state.exam){const n=Math.ceil((parse(state.exam)-t)/DAY);if(n>=0)L.push('Klausur'+(state.examName?' '+state.examName:'')+': '+(n===0?'heute!':'in '+n+' '+(n===1?'Tag':'Tagen')));}
+  L.push('Noch '+left+' Tage bis zum Abschluss');
+  return L.join('\n');
+}
+async function shareProgress(){
+  const txt=progressText();
+  if(navigator.share){try{await navigator.share({text:txt});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  try{await navigator.clipboard.writeText(txt);toast('Kopiert ✓ Jetzt einfach bei Tobi einfügen.');}catch(e){prompt('Diesen Text an Tobi schicken:',txt);}
+}
+
 let settingsOpen=false,renderedDay='';
 let editingNote=false;
 function render(){
@@ -353,6 +375,7 @@ function render(){
   <div class="card"><h2>🌱 Deine Woche</h2>
     <div class="streak"><div><b>${st}</b><span>${st===1?'Tag':'Tage'} am Stück</span></div><div><b>${hours.toFixed(1).replace('.',',')}</b><span>Stunden gesamt</span></div><div><b>${doneCount}/${state.milestones.length}</b><span>Meilensteine</span></div></div>
     <div class="bars">${days.map((x,i)=>`<div class="bar ${i===6?'is-today':''}"><i class="${x.m?'':'zero'}" style="height:${x.m?Math.max(6,x.m/maxM*70):4}px"></i><span>${wd[x.d.getDay()]}</span></div>`).join('')}</div>
+    <div class="row" style="margin-top:12px"><button class="btn-ghost small" data-act="share">📤 Fortschritt mit Tobi teilen</button></div>
   </div>
 
   <div class="card"><h2 style="justify-content:space-between"><span>🎁 Belohnungen</span><button class="btn-ghost small" data-act="${editingRewards?'rewsave':'rewedit'}">${editingRewards?'Fertig':'Bearbeiten'}</button></h2>
@@ -407,6 +430,7 @@ document.addEventListener('click',e=>{
     document.querySelectorAll('[data-rh]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rh);const v=Math.round(+i.value);if(r&&v>0)r.h=v;});
     state.rewards.sort((a,b)=>(a.ms?-1:b.ms?1:0)||((a.h??1e9)-(b.h??1e9)));editingRewards=false;save();render();}
   else if(a==='export'){exportData();}
+  else if(a==='share'){shareProgress();}
   else if(a==='pushon'){enablePush();}
   else if(a==='pushcode'){sendCode();}
   else if(a==='pushtest'){testPush();}

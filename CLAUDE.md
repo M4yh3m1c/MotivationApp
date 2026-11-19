@@ -14,7 +14,7 @@ Gehostet über GitHub Pages, genutzt auf ihrem iPhone als Web-App auf dem Home-B
 - Der Code für `claude.use("artifact")` stammt aus der claude.ai-Version und ist auf GitHub Pages wirkungslos
 
 ## Inhalte
-- Bereiche: Tobis Spruch des Tages, Countdown, Karte „Erste Klausur“ mit Mutmachern, Fokus-Timer, Wochenübersicht, Belohnungen, Meilensteine, Nachricht von Tobi, Erinnerung (Push), Einstellungen (inkl. Export/Import)
+- Bereiche: Tobis Spruch des Tages, Countdown, Karte „Erste Klausur“ mit Mutmachern, Fokus-Timer, Wochenübersicht (mit „Fortschritt mit Tobi teilen“ als Textnachricht übers Teilen-Menü), Belohnungen, Meilensteine, Nachricht von Tobi, Erinnerung (Push), Einstellungen (inkl. Export/Import)
 - Sabrina hat noch keine Klausur geschrieben (Stand Nov 2026) und macht sich deswegen Sorgen – Ton ermutigend, ohne Druck
 - Belohnungen dürfen sich NICHT mit Tobis Adventskalender überschneiden. Dort schon vergeben:
   Serienabend, Ausschlafen, Massage, freier Nachmittag, Date-Abend
