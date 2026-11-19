@@ -170,7 +170,7 @@ const fmtDate=d=>d.toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'
 let art=null,readOnly=false,dirty=false,pubTimer=null;
 function connect(){if(window.claude&&window.claude.use){window.claude.use('artifact').then(a=>{art=a;if(dirty)schedule();}).catch(()=>{});return true;}return false;}
 if(!connect())window.addEventListener('load',connect,{once:true});
-function save(){state.rev=(state.rev||0)+1;try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}dirty=true;schedule();}
+function save(){state.rev=(state.rev||0)+1;try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}writeStatus();dirty=true;schedule();}
 function schedule(){if(!art||readOnly)return;clearTimeout(pubTimer);pubTimer=setTimeout(doPublish,1500);}
 function doPublish(){
   if(timer.running){pubTimer=setTimeout(doPublish,5000);return;}
@@ -250,6 +250,58 @@ function dailyQuote(t){
   return {txt:QUOTES[doy%QUOTES.length],tobi:false};
 }
 
+// ---- Erinnerungen (Push) ----
+const VAPID_PUBLIC='BJH5XcaBsAiLvmbAIDe1pHchNBZ56e3GiMevmgIndZsLLUWZS-t7LX8vtWLOJriKzfcMgf-Gun2DARpH9yWVCak';
+const swOK='serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost');
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+let swReg=null;const push={state:'checking',sub:null};
+function b64u(s){s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);const r=atob(s);return Uint8Array.from(r,c=>c.charCodeAt(0));}
+function writeStatus(){
+  if(!swOK||!window.caches)return;const t=today0();
+  const url=new URL('endspurt-status.json',swReg?swReg.scope:location.href).href;
+  caches.open('endspurt-status').then(c=>c.put(url,new Response(JSON.stringify({date:key(t),minutes:minutes(key(t)),streak:streak()}),{headers:{'Content-Type':'application/json'}}))).catch(()=>{});
+}
+async function initPush(){
+  if(!swOK){push.state='nosw';return;}
+  try{swReg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;}catch(e){push.state='nosw';render();return;}
+  writeStatus();
+  if(!('PushManager' in window)||!('Notification' in window))push.state=isIOS&&!standalone?'install':'unsupported';
+  else if(Notification.permission==='denied')push.state='denied';
+  else{try{push.sub=await swReg.pushManager.getSubscription();}catch(e){}push.state=push.sub?'on':'off';}
+  render();
+}
+async function enablePush(){
+  try{
+    const p=await Notification.requestPermission();
+    if(p!=='granted'){push.state=p==='denied'?'denied':'off';render();toast('Ohne Erlaubnis kann die App keine Erinnerungen schicken.');return;}
+    push.sub=await swReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+    push.state='on';render();toast('Erinnerungen aktiviert ✓ Jetzt noch den Code an Tobi schicken.');
+  }catch(e){toast('Hat nicht geklappt: '+(e&&e.message||e));}
+}
+async function sendCode(){
+  if(!push.sub)return;const code=JSON.stringify(push.sub);
+  if(navigator.share){try{await navigator.share({text:code});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  try{await navigator.clipboard.writeText(code);toast('Code kopiert ✓ Schick ihn Tobi.');}catch(e){prompt('Diesen Code an Tobi schicken:',code);}
+}
+async function testPush(){try{await swReg.showNotification('Endspurt',{body:'So sieht die Erinnerung aus, Maus. ❤️',icon:'icon-192.png',tag:'endspurt-test'});}catch(e){toast('Test hat nicht geklappt: '+(e&&e.message||e));}}
+async function disablePush(){if(!confirm('Erinnerungen auf diesem Gerät ausschalten?'))return;try{await push.sub.unsubscribe();}catch(e){}push.sub=null;push.state='off';render();toast('Erinnerungen ausgeschaltet.');}
+function pushCard(){
+  const st=push.state;if(st==='checking'||st==='nosw')return '';
+  const body={
+    on:`<p class="tag" style="font-size:14px;margin:0 0 10px">✓ Aktiv. Jeden Abend um 19 Uhr fragt Tobi nach, ob du heute schon gelernt hast. Hast du schon etwas eingetragen, gibt's stattdessen Lob.</p>
+      <div class="row" style="justify-content:flex-start"><button class="btn small" data-act="pushcode">Code an Tobi schicken</button><button class="btn-ghost small" data-act="pushtest">Testen</button><button class="btn-ghost small" data-act="pushoff">Ausschalten</button></div>
+      <div class="tag" style="margin-top:8px">Den Code braucht Tobi einmal, damit die Erinnerungen bei dir ankommen.</div>`,
+    off:`<p class="tag" style="font-size:14px;margin:0 0 10px">Jeden Abend um 19 Uhr eine kleine Nachricht: „Heute schon gelernt?“ – oder Lob, wenn du schon fleißig warst.</p>
+      <button class="btn small" data-act="pushon">Erinnerungen aktivieren</button>`,
+    install:`<p class="tag" style="font-size:14px;margin:0">Auf dem iPhone klappt das nur mit der App auf dem Home-Bildschirm: In Safari auf <b>Teilen</b> → <b>„Zum Home-Bildschirm“</b> tippen und die App dann von dort öffnen.</p>`,
+    denied:`<p class="tag" style="font-size:14px;margin:0">Mitteilungen sind blockiert. Erlauben kannst du sie in den iPhone-Einstellungen unter <b>Mitteilungen → Endspurt</b>.</p>`,
+    unsupported:`<p class="tag" style="font-size:14px;margin:0">Dieses Gerät unterstützt keine Benachrichtigungen. Auf dem iPhone braucht es iOS 16.4 oder neuer.</p>`
+  }[st]||'';
+  return `<div class="card"><h2>🔔 Erinnerung</h2>${body}</div>`;
+}
+
+let settingsOpen=false;
 let editingNote=false;
 function render(){
   const t=today0(),start=parse(state.start),end=parse(state.end);
@@ -324,7 +376,9 @@ function render(){
       :`<p>${esc(state.note)}</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn-ghost small" data-act="noteedit">Bearbeiten</button></div>`}
   </div>
 
-  <div class="card"><details><summary>Einstellungen</summary><div class="set">
+  ${pushCard()}
+
+  <div class="card"><details id="setdet" ${settingsOpen?'open':''}><summary>Einstellungen</summary><div class="set">
     <label>Studienbeginn<input type="date" id="sstart" value="${state.start}"></label>
     <label>Geplanter Abschluss<input type="date" id="send" value="${state.end}"></label>
     <div style="border-top:1px dashed var(--line);padding-top:12px;margin-top:4px">
@@ -353,6 +407,10 @@ document.addEventListener('click',e=>{
     document.querySelectorAll('[data-rh]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rh);const v=Math.round(+i.value);if(r&&v>0)r.h=v;});
     state.rewards.sort((a,b)=>(a.ms?-1:b.ms?1:0)||((a.h??1e9)-(b.h??1e9)));editingRewards=false;save();render();}
   else if(a==='export'){exportData();}
+  else if(a==='pushon'){enablePush();}
+  else if(a==='pushcode'){sendCode();}
+  else if(a==='pushtest'){testPush();}
+  else if(a==='pushoff'){disablePush();}
   else if(a==='import'){$('#impfile').click();}
   else if(a==='examclear'){state.exam='';save();render();}
   else if(a==='noteedit'){editingNote=true;render();$('#notein').focus();}
@@ -366,7 +424,9 @@ document.addEventListener('change',e=>{
   if(e.target.id==='ename'){state.examName=e.target.value.trim();save();}
   if(e.target.id==='edate'&&e.target.value){const nm=$('#ename');if(nm)state.examName=nm.value.trim();state.exam=e.target.value;save();render();}
 });
+document.addEventListener('toggle',e=>{if(e.target.id==='setdet')settingsOpen=e.target.open;},true);
 render();
+initPush();
 })();
 </script>
 </body>
