@@ -4,7 +4,7 @@ Web-App für Sabrinas Fernstudium, gehostet über GitHub Pages und auf dem iPhon
 
 ## Tägliche Erinnerung (Push) einrichten
 
-Jeden Abend um 19 Uhr schickt eine GitHub Action eine Benachrichtigung („Heute schon gelernt?“ – oder Lob, wenn schon gelernt wurde).
+Jeden Vormittag um 10 Uhr schickt eine GitHub Action eine Benachrichtigung („Heute schon gelernt?“ – oder Lob, wenn schon gelernt wurde).
 
 1. **Schlüssel hinterlegen (einmalig):** Im Repository unter *Settings → Secrets and variables → Actions → New repository secret*
    das Secret `VAPID_PRIVATE_KEY` mit dem privaten Schlüssel anlegen. Der Schlüssel gehört nicht ins Repository.

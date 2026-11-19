@@ -7,21 +7,21 @@ const STATUS_URL = new URL('endspurt-status.json', self.registration.scope).href
 
 const OFFEN = [
   'Heute schon gelernt, Maus? 15 Minuten reichen schon. ❤️',
-  'Hey Schatz, kurze Erinnerung: Ein kleiner Lernblock heute und der Tag zählt. 💪',
+  'Guten Morgen, Schatz! Plan dir heute einen kleinen Lernblock ein – dann zählt der Tag. 💪',
   'Heute schon gelernt? Timer an, 25 Minuten, fertig. Ich glaub an dich.',
-  'Noch Zeit für eine kleine Runde? Auch 10 Minuten bringen dich weiter, Maus.',
+  'Kaffee in der Hand? Perfekt für eine kleine Lernrunde, Maus. ☕',
   'Heute schon was fürs Studium gemacht? Wenn nicht: Ein Absatz reicht. Wenn doch: Eintragen nicht vergessen! 😉',
   'Kleiner Stups von mir: Heute schon gelernt, Schatz?',
-  'Dein Endspurt wartet. Eine Mini-Einheit, und du kannst stolz ins Bett gehen.'
+  'Der Tag ist noch jung. Eine Mini-Einheit, und du kannst heute Abend stolz auf dich sein.'
 ];
 const SERIE = n => [
   `${n} Tage am Stück! Heute noch 15 Minuten, und deine Serie läuft weiter, Maus. 🔥`,
   `Deine Serie steht bei ${n} Tagen, Schatz. Lass sie heute nicht abreißen – ein kleiner Block reicht. 🔥`
 ];
 const GESCHAFFT = m => [
-  `Stark, Maus! Heute schon ${m} Minuten gelernt. Den Rest des Abends hast du dir verdient. ❤️`,
-  `${m} Minuten heute – ich bin stolz auf dich, Schatz! 💪`,
-  `Heute ${m} Minuten geschafft. Füße hoch, du hast genug getan. ✨`
+  `Wow, Maus! Heute schon ${m} Minuten gelernt – und es ist erst Vormittag. ❤️`,
+  `Schon ${m} Minuten heute – ich bin stolz auf dich, Schatz! 💪`,
+  `${m} Minuten sind heute schon geschafft. Der Rest des Tages ist Bonus. ✨`
 ];
 
 function heute() {

@@ -4,7 +4,7 @@ import webpush from 'web-push';
 
 const PUBLIC_KEY = 'BJH5XcaBsAiLvmbAIDe1pHchNBZ56e3GiMevmgIndZsLLUWZS-t7LX8vtWLOJriKzfcMgf-Gun2DARpH9yWVCak';
 const SUBJECT = 'https://m4yh3m1c.github.io/MotivationApp/';
-const STUNDE = 19; // Uhrzeit in Berlin
+const STUNDE = 10; // Uhrzeit in Berlin
 
 const { VAPID_PRIVATE_KEY, PUSH_SUBSCRIPTIONS, SCHEDULE, TEXT } = process.env;
 

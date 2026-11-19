@@ -1,8 +1,8 @@
 name: Tägliche Erinnerung
 
-# Schickt Sabrina jeden Abend um 19 Uhr (deutsche Zeit) eine Push-Benachrichtigung.
-# Zwei Zeitpläne, weil GitHub in UTC rechnet: 17 Uhr UTC = 19 Uhr Sommerzeit, 18 Uhr UTC = 19 Uhr Winterzeit.
-# Das Skript schickt nur bei dem Lauf, der gerade 19 Uhr in Berlin entspricht.
+# Schickt Sabrina jeden Vormittag um 10 Uhr (deutsche Zeit) eine Push-Benachrichtigung.
+# Zwei Zeitpläne, weil GitHub in UTC rechnet: 8 Uhr UTC = 10 Uhr Sommerzeit, 9 Uhr UTC = 10 Uhr Winterzeit.
+# Das Skript schickt nur bei dem Lauf, der gerade 10 Uhr in Berlin entspricht.
 #
 # Benötigte Secrets (Settings → Secrets and variables → Actions):
 #   VAPID_PRIVATE_KEY   – privater Schlüssel (nur einmal einrichten)
@@ -10,8 +10,8 @@ name: Tägliche Erinnerung
 
 on:
   schedule:
-    - cron: '0 17 * * *'
-    - cron: '0 18 * * *'
+    - cron: '0 8 * * *'
+    - cron: '0 9 * * *'
   workflow_dispatch:
     inputs:
       text:
