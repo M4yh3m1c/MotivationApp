@@ -194,6 +194,44 @@ setInterval(()=>{if(!timer.running)return;if(timer.end-Date.now()<=0){timer.runn
 
 let toastT;function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3200);}
 
+// ---- export / import ----
+async function exportData(){
+  state.lastExport=key(today0());save();
+  const json=JSON.stringify({app:'sabrina-endspurt',version:1,exported:new Date().toISOString(),state},null,2);
+  const name='endspurt-sicherung-'+key(today0())+'.json';
+  let file=null;try{file=new File([json],name,{type:'application/json'});}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'Endspurt-Sicherung'});toast('Sicherung erstellt ✓');render();return;}
+    catch(e){if(e&&e.name==='AbortError'){render();return;}}
+  }
+  const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+  toast('Sicherung heruntergeladen ✓');render();
+}
+function validState(s){return s&&typeof s==='object'&&typeof s.start==='string'&&typeof s.end==='string'&&s.log&&typeof s.log==='object'&&Array.isArray(s.milestones)&&Array.isArray(s.claimed);}
+function importData(f){
+  const r=new FileReader();
+  r.onload=()=>{
+    let d;try{d=JSON.parse(r.result);}catch(e){toast('Die Datei konnte nicht gelesen werden.');return;}
+    const s=d&&d.state?d.state:d;
+    if(!validState(s)){toast('Das ist keine gültige Endspurt-Sicherung.');return;}
+    const h=(Object.values(s.log).reduce((a,b)=>a+(+b||0),0)/60).toFixed(1).replace('.',',');
+    const when=d.exported?' vom '+new Date(d.exported).toLocaleDateString('de-DE'):'';
+    if(!confirm('Sicherung'+when+' laden?\n\n'+h+' Std gelernt, '+s.milestones.filter(m=>m.done).length+'/'+s.milestones.length+' Meilensteine.\n\nDer aktuelle Stand auf diesem Gerät wird ersetzt.'))return;
+    const rev=Math.max(state.rev||0,s.rev||0);
+    state=s;state.rev=rev;
+    if(!Array.isArray(state.rewards)||state.rewardsV!==2){state.rewards=DEFAULT_REWARDS.map(x=>({...x}));state.rewardsV=2;}
+    if(typeof state.note!=='string')state.note='';
+    if(typeof state.exam!=='string')state.exam='';
+    if(typeof state.examName!=='string')state.examName='';
+    editingRewards=false;editingNote=false;
+    save();render();toast('Sicherung geladen ✓');
+  };
+  r.onerror=()=>toast('Die Datei konnte nicht gelesen werden.');
+  r.readAsText(f);
+}
+
 let editingNote=false;
 function render(){
   const t=today0(),start=parse(state.start),end=parse(state.end);
@@ -272,6 +310,12 @@ function render(){
   <div class="card"><details><summary>Einstellungen</summary><div class="set">
     <label>Studienbeginn<input type="date" id="sstart" value="${state.start}"></label>
     <label>Geplanter Abschluss<input type="date" id="send" value="${state.end}"></label>
+    <div style="border-top:1px dashed var(--line);padding-top:12px;margin-top:4px">
+      <div class="tag" style="font-size:14px;margin-bottom:8px">Sicherung: Dein Fortschritt liegt nur auf diesem Gerät. Exportier ihn ab und zu, zum Beispiel in die Dateien-App oder an Tobi.</div>
+      <div class="row" style="justify-content:flex-start"><button class="btn small" data-act="export">Exportieren</button><button class="btn-ghost small" data-act="import">Importieren</button></div>
+      ${state.lastExport?`<div class="tag" style="margin-top:8px">Zuletzt exportiert: ${fmtDate(parse(state.lastExport))}</div>`:''}
+      <input type="file" id="impfile" accept="application/json,.json" style="display:none">
+    </div>
   </div></details></div>
   ${readOnly?'<div class="ro">Fortschritt wird nur in diesem Browser gespeichert.</div>':''}`;
   updateTimer();
@@ -291,12 +335,15 @@ document.addEventListener('click',e=>{
   else if(a==='rewsave'){document.querySelectorAll('[data-rt]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rt);if(r&&i.value.trim())r.t=i.value.trim();});
     document.querySelectorAll('[data-rh]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rh);const v=Math.round(+i.value);if(r&&v>0)r.h=v;});
     state.rewards.sort((a,b)=>(a.ms?-1:b.ms?1:0)||((a.h??1e9)-(b.h??1e9)));editingRewards=false;save();render();}
+  else if(a==='export'){exportData();}
+  else if(a==='import'){$('#impfile').click();}
   else if(a==='examclear'){state.exam='';save();render();}
   else if(a==='noteedit'){editingNote=true;render();$('#notein').focus();}
   else if(a==='notesave'){state.note=$('#notein').value.trim();editingNote=false;save();render();}
 });
 document.addEventListener('submit',e=>{if(e.target.id!=='msform')return;e.preventDefault();const v=$('#msin').value.trim();if(!v)return;state.milestones.push({id:'m'+Date.now(),text:v,done:false});save();render();});
 document.addEventListener('change',e=>{
+  if(e.target.id==='impfile'){const f=e.target.files&&e.target.files[0];e.target.value='';if(f)importData(f);return;}
   if(e.target.id==='sstart'&&e.target.value){state.start=e.target.value;save();render();}
   if(e.target.id==='send'&&e.target.value){state.end=e.target.value;save();render();}
   if(e.target.id==='ename'){state.examName=e.target.value.trim();save();}

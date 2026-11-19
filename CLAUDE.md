@@ -7,10 +7,11 @@ Gehostet über GitHub Pages, genutzt auf ihrem iPhone als Web-App auf dem Home-B
 - `index.html` – die komplette App (HTML, CSS, JS in einer Datei, keine Build-Tools)
 - `manifest.webmanifest`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` – Symbol und Vollbildmodus
 - Startzustand steht als JSON in `<script id="app-state">`; Fortschritt speichert die App im localStorage (`sabrina-endspurt-v1`)
+- Sicherung: In den Einstellungen gibt es Export (JSON-Datei über das iOS-Teilen-Menü, sonst Download) und Import (ersetzt den Stand nach Rückfrage)
 - Der Code für `claude.use("artifact")` stammt aus der claude.ai-Version und ist auf GitHub Pages wirkungslos
 
 ## Inhalte
-- Bereiche: Tagesspruch, Countdown, Karte „Erste Klausur“ mit Mutmachern, Fokus-Timer, Wochenübersicht, Belohnungen, Meilensteine, Nachricht von Tobi, Einstellungen
+- Bereiche: Tagesspruch, Countdown, Karte „Erste Klausur“ mit Mutmachern, Fokus-Timer, Wochenübersicht, Belohnungen, Meilensteine, Nachricht von Tobi, Einstellungen (inkl. Export/Import)
 - Sabrina hat noch keine Klausur geschrieben (Stand Nov 2026) und macht sich deswegen Sorgen – Ton ermutigend, ohne Druck
 - Belohnungen dürfen sich NICHT mit Tobis Adventskalender überschneiden. Dort schon vergeben:
   Serienabend, Ausschlafen, Massage, freier Nachmittag, Date-Abend
