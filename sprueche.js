@@ -10,6 +10,7 @@
 //
 // Bitte keine Belohnungen versprechen, die schon im Adventskalender stecken
 // (Serienabend, Ausschlafen, Massage, freier Nachmittag, Date-Abend, Schokolade, Chips, Fitzek, Wellness).
+// Ausnahme: Der Spruch "Schokolade ist erlaubt. Aufgeben nicht." bleibt ausdrücklich drin.
 
 window.TOBI_SPRUECHE = {
 start: "2026-11-19",
@@ -45,7 +46,7 @@ taeglich: [
 "Niemand hat gesagt, dass es leicht ist. Aber du hast schon ganz andere Sachen gewuppt.",
 "Ein Tag Pause macht dein Studium nicht kaputt. Wichtig ist nur, dass du morgen wieder anfängst.",
 "Du hast angefangen, obwohl es unbequem war. Das ist der schwerste Teil – und der liegt hinter dir.",
-"Konzentrier dich auf die nächste Aufgabe, nicht auf den ganzen Berg.",
+"Schokolade ist erlaubt. Aufgeben nicht.",
 "Was du heute schaffst, musst du morgen nicht mehr machen. Klingt banal, fühlt sich aber gut an.",
 "Vorweihnachtsstress ist auch Stress. Sei heute nicht zu streng mit dir.",
 "Lernen zwischen Geschenken und Terminen? Respekt. Auch 15 Minuten zählen.",

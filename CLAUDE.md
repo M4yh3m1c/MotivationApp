@@ -17,6 +17,7 @@ Gehostet über GitHub Pages, genutzt auf ihrem iPhone als Web-App auf dem Home-B
 - Belohnungen dürfen sich NICHT mit Tobis Adventskalender überschneiden. Dort schon vergeben:
   Serienabend, Ausschlafen, Massage, freier Nachmittag, Date-Abend
 - Auch zu nah am Adventskalender und deshalb raus: Schokolade, Chips, Fitzek-Bücher, Wellness
+  (gilt für Belohnungen – der Spruch „Schokolade ist erlaubt. Aufgeben nicht.“ bleibt auf Wunsch drin)
 - Belohnungen haben eine Versionsnummer (`rewardsV`); bei neuen Standard-Belohnungen hochzählen, damit sie gespeicherte Listen ersetzen
 
 ## Arbeitsweise
