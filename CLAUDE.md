@@ -5,7 +5,7 @@ Gehostet über GitHub Pages, genutzt auf ihrem iPhone als Web-App auf dem Home-B
 
 ## Aufbau
 - `index.html` – die komplette App (HTML, CSS, JS in einer Datei, keine Build-Tools)
-- `sprueche.js` – Tobis täglicher Spruch (`taeglich` ab `start`, ein Eintrag pro Tag bis 31.08.2027, Monatsblöcke müssen zur Tageszahl passen), `besondere` für feste Tage, `klausur` für Vortag/Klausurtag
+- `sprueche.js` – Tobis täglicher Spruch (Kosenamen „Schatz“ und „Maus“ sparsam eingestreut; `taeglich` ab `start`, ein Eintrag pro Tag bis 31.08.2027, Monatsblöcke müssen zur Tageszahl passen), `besondere` für feste Tage, `klausur` für Vortag/Klausurtag
 - `manifest.webmanifest`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` – Symbol und Vollbildmodus
 - Startzustand steht als JSON in `<script id="app-state">`; Fortschritt speichert die App im localStorage (`sabrina-endspurt-v1`)
 - Sicherung: In den Einstellungen gibt es Export (JSON-Datei über das iOS-Teilen-Menü, sonst Download) und Import (ersetzt den Stand nach Rückfrage)
