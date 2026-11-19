@@ -98,6 +98,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:14px}
 <div id="toast" class="toast" data-own></div>
 <script id="app-state" type="application/json" data-own>{"rev":100,"start":"2024-10-01","end":"2027-08-31","exam":"","examName":"","log":{},"claimed":[],"note":"Ich bin so stolz auf dich, wie du Studium, Familie und Alltag unter einen Hut bekommst.\nBis August 2027 – und dann feiern wir! ❤️\nTobi","milestones":[{"id":"k1","text":"Erste Klausur ausgesucht & angemeldet","done":false},{"id":"k2","text":"Lernplan für die erste Klausur steht","done":false},{"id":"k3","text":"Eine Probe- oder Altklausur unter echten Bedingungen gemacht","done":false},{"id":"k4","text":"Erste Klausur geschrieben 💪","done":false},{"id":"m2","text":"Thema für die Abschlussarbeit festlegen","done":false},{"id":"m3","text":"Betreuung gefunden & Arbeit angemeldet","done":false},{"id":"m4","text":"Gliederung / Exposé fertig","done":false},{"id":"m5","text":"Rohfassung geschrieben","done":false},{"id":"m6","text":"Abschlussarbeit abgegeben","done":false},{"id":"m7","text":"Letzte Prüfung / Kolloquium","done":false},{"id":"m8","text":"Abschluss feiern 🎉","done":false}]}</script>
 <script src="sprueche.js" data-own></script>
+<script src="tobi.js" data-own></script>
 <script id="app-main" data-own>
 (function(){
 // Pristine copy of the page, used to save state as a new version
@@ -156,7 +157,11 @@ const DEFAULT_REWARDS=[
  {id:"q7",h:null,ico:"🎓",t:"Zum Abschluss: Kurzurlaub zu zweit"}
 ];
 if(!Array.isArray(state.rewards)||state.rewardsV!==2){state.rewards=DEFAULT_REWARDS.map(r=>({...r}));state.rewardsV=2;}
-let editingRewards=false;
+// Nachricht & Belohnungen kommen aus tobi.js (Tobi pflegt sie auf GitHub); state nur als Ersatz
+const TI=window.TOBI_INHALT||{};
+const ordne=l=>[...l].sort((a,b)=>(a.ms?-1:b.ms?1:0)||((a.h??1e9)-(b.h??1e9)));
+const rewards=()=>ordne(Array.isArray(TI.belohnungen)&&TI.belohnungen.length?TI.belohnungen:state.rewards);
+const tobiNote=()=>typeof TI.nachricht==='string'?TI.nachricht:state.note;
 
 const pad=n=>String(n).padStart(2,'0');
 const key=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -226,7 +231,6 @@ function importData(f){
     if(typeof state.note!=='string')state.note='';
     if(typeof state.exam!=='string')state.exam='';
     if(typeof state.examName!=='string')state.examName='';
-    editingRewards=false;editingNote=false;
     save();render();toast('Sicherung geladen ✓');
   };
   r.onerror=()=>toast('Die Datei konnte nicht gelesen werden.');
@@ -324,7 +328,6 @@ async function shareProgress(){
 }
 
 let settingsOpen=false,renderedDay='';
-let editingNote=false;
 function render(){
   const t=today0(),start=parse(state.start),end=parse(state.end);renderedDay=key(t);
   const left=Math.max(0,Math.ceil((end-t)/DAY));
@@ -378,11 +381,8 @@ function render(){
     <div class="row" style="margin-top:12px"><button class="btn-ghost small" data-act="share">📤 Fortschritt mit Tobi teilen</button></div>
   </div>
 
-  <div class="card"><h2 style="justify-content:space-between"><span>🎁 Belohnungen</span><button class="btn-ghost small" data-act="${editingRewards?'rewsave':'rewedit'}">${editingRewards?'Fertig':'Bearbeiten'}</button></h2>
-    ${editingRewards?state.rewards.map(r=>`<div class="reward"><div class="ico">${r.ico}</div><div class="meta" style="display:grid;gap:6px">
-      <input type="text" data-rt="${r.id}" value="${esc(r.t)}">
-      ${r.ms?'<span class="tag">wird freigeschaltet mit dem Meilenstein „Erste Klausur geschrieben“</span>':r.h==null?'<span class="tag">wird freigeschaltet, wenn alle Meilensteine abgehakt sind</span>':`<label class="tag" style="display:flex;gap:8px;align-items:center">ab <input type="number" min="1" data-rh="${r.id}" value="${r.h}" style="width:80px;font:inherit;border:1px solid var(--line);border-radius:10px;padding:6px 8px"> Stunden</label>`}
-      </div></div>`).join(''):state.rewards.map(r=>{const msObj=r.ms&&state.milestones.find(m=>m.id===r.ms);if(r.ms&&!msObj)return '';
+  <div class="card"><h2>🎁 Belohnungen</h2>
+    ${rewards().map(r=>{const msObj=r.ms&&state.milestones.find(m=>m.id===r.ms);if(r.ms&&!msObj)return '';
       const unl=r.ms?msObj.done:r.h==null?allDone:hours>=r.h;const cl=state.claimed.includes(r.id);const p=r.ms?0:r.h==null?(state.milestones.length?doneCount/state.milestones.length:0):Math.min(1,hours/r.h);
       return `<div class="reward ${unl?'':'locked'}"><div class="ico">${r.ico}</div><div class="meta"><b>${esc(r.t)}</b>
       ${unl?'':`${r.ms?'':`<div class="prog"><i style="width:${p*100}%"></i></div>`}<span class="tag">${r.ms?'Meilenstein „'+esc(msObj.text)+'“ abhaken':r.h==null?'alle Meilensteine abhaken':`ab ${r.h} Std · noch ${Math.max(0,r.h-hours).toFixed(1).replace('.',',')} Std`}</span>`}</div>
@@ -395,8 +395,7 @@ function render(){
   </div>
 
   <div class="card note"><h2>💌 Von Tobi</h2>
-    ${editingNote?`<textarea id="notein">${esc(state.note)}</textarea><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn small" data-act="notesave">Speichern</button></div>`
-      :`<p>${esc(state.note)}</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn-ghost small" data-act="noteedit">Bearbeiten</button></div>`}
+    <p>${esc(tobiNote())}</p>
   </div>
 
   ${pushCard()}
@@ -425,20 +424,7 @@ document.addEventListener('click',e=>{
   else if(a==='ms'){const m=state.milestones.find(x=>x.id===id);m.done=!m.done;if(m.done)toast('Meilenstein geschafft! 🎉');save();render();}
   else if(a==='msdel'){state.milestones=state.milestones.filter(x=>x.id!==id);save();render();}
   else if(a==='claim'){state.claimed=state.claimed.includes(id)?state.claimed.filter(x=>x!==id):[...state.claimed,id];save();render();}
-  else if(a==='rewedit'){editingRewards=true;render();}
-  else if(a==='rewsave'){document.querySelectorAll('[data-rt]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rt);if(r&&i.value.trim())r.t=i.value.trim();});
-    document.querySelectorAll('[data-rh]').forEach(i=>{const r=state.rewards.find(x=>x.id===i.dataset.rh);const v=Math.round(+i.value);if(r&&v>0)r.h=v;});
-    state.rewards.sort((a,b)=>(a.ms?-1:b.ms?1:0)||((a.h??1e9)-(b.h??1e9)));editingRewards=false;save();render();}
-  else if(a==='export'){exportData();}
-  else if(a==='share'){shareProgress();}
-  else if(a==='pushon'){enablePush();}
-  else if(a==='pushcode'){sendCode();}
-  else if(a==='pushtest'){testPush();}
-  else if(a==='pushoff'){disablePush();}
-  else if(a==='import'){$('#impfile').click();}
   else if(a==='examclear'){state.exam='';save();render();}
-  else if(a==='noteedit'){editingNote=true;render();$('#notein').focus();}
-  else if(a==='notesave'){state.note=$('#notein').value.trim();editingNote=false;save();render();}
 });
 document.addEventListener('submit',e=>{if(e.target.id!=='msform')return;e.preventDefault();const v=$('#msin').value.trim();if(!v)return;state.milestones.push({id:'m'+Date.now(),text:v,done:false});save();render();});
 document.addEventListener('change',e=>{
@@ -449,7 +435,7 @@ document.addEventListener('change',e=>{
   if(e.target.id==='edate'&&e.target.value){const nm=$('#ename');if(nm)state.examName=nm.value.trim();state.exam=e.target.value;save();render();}
 });
 // Neuer Tag, während die App im Hintergrund war: Spruch, Countdown & Co. aktualisieren
-function refreshIfNewDay(){if(document.visibilityState!=='hidden'&&key(today0())!==renderedDay){editingNote=false;editingRewards=false;render();writeStatus();}}
+function refreshIfNewDay(){if(document.visibilityState!=='hidden'&&key(today0())!==renderedDay){render();writeStatus();}}
 document.addEventListener('visibilitychange',refreshIfNewDay);
 window.addEventListener('pageshow',refreshIfNewDay);
 setInterval(refreshIfNewDay,60000);
