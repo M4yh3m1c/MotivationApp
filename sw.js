@@ -23,6 +23,20 @@ const GESCHAFFT = m => [
   `Schon ${m} Minuten heute – ich bin stolz auf dich, Schatz! 💪`,
   `${m} Minuten sind heute schon geschafft. Der Rest des Tages ist Bonus. ✨`
 ];
+// 19 Uhr – heute gelernt
+const ABEND_LOB = (m, n) => [
+  `${m} Minuten heute – ich bin so stolz auf dich, Maus! Jetzt ist Feierabend. ❤️`,
+  `Heute ${m} Minuten gelernt. Stark, Schatz! Füße hoch, du hast es dir verdient. ✨`,
+  n >= 2 ? `${n} Tage am Stück und heute ${m} Minuten – du ziehst das richtig durch, Maus! 🔥` : `Wieder ein Lerntag geschafft: ${m} Minuten. Ich bin stolz auf dich, Schatz. 💪`,
+  `${m} Minuten näher am Abschluss. Gönn dir einen schönen Abend, Maus. 🌙`
+];
+// 19 Uhr – heute (noch) nichts eingetragen: kein Druck, nur ein lieber Gruß
+const ABEND_OHNE = [
+  'Heute war kein Lerntag? Völlig okay, Maus. Morgen ist ein neuer Tag. ❤️',
+  'Pausen gehören dazu, Schatz. Genieß deinen Abend – du schaffst das trotzdem.',
+  'Falls du heute doch gelernt hast: Eintragen nicht vergessen! 😉 Sonst einfach: schönen Abend, Maus.',
+  'Nicht jeder Tag muss ein Lerntag sein. Ich bin trotzdem stolz auf dich, Schatz.'
+];
 
 function heute() {
   const d = new Date();
@@ -51,17 +65,20 @@ self.addEventListener('push', e => {
     let body = data.body;
     if (!body) {
       const s = await leseStatus();
+      const abend = data.typ === 'abend';
       const istHeute = s && s.date === heute();
       const heuteGelernt = istHeute ? (s.minutes || 0) : 0;
       // Serie zählt nur, wenn der Stand von heute ist oder von gestern mit Lernzeit
       const g = new Date(Date.now() - 864e5);
       const gestern = g.getFullYear() + '-' + String(g.getMonth() + 1).padStart(2, '0') + '-' + String(g.getDate()).padStart(2, '0');
       const serie = istHeute ? s.streak : (s && s.date === gestern && s.minutes > 0 ? s.streak : 0);
-      if (heuteGelernt > 0) body = pick(GESCHAFFT(heuteGelernt));
+      if (abend) body = heuteGelernt > 0 ? pick(ABEND_LOB(heuteGelernt, serie)) : pick(ABEND_OHNE);
+      else if (heuteGelernt > 0) body = pick(GESCHAFFT(heuteGelernt));
       else if (serie >= 2) body = pick(SERIE(serie));
       else body = pick(OFFEN);
     }
     await self.registration.showNotification(data.title || 'Endspurt', {
+      // iOS verlangt, dass jede Push-Nachricht sichtbar angezeigt wird – darum gibt es abends immer einen Text
       body,
       icon: 'icon-192.png',
       badge: 'icon-192.png',

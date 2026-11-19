@@ -1,21 +1,30 @@
 name: Tägliche Erinnerung
 
-# Schickt Sabrina jeden Vormittag um 10 Uhr (deutsche Zeit) eine Push-Benachrichtigung.
-# Zwei Zeitpläne, weil GitHub in UTC rechnet: 8 Uhr UTC = 10 Uhr Sommerzeit, 9 Uhr UTC = 10 Uhr Winterzeit.
-# Das Skript schickt nur bei dem Lauf, der gerade 10 Uhr in Berlin entspricht.
+# Schickt Sabrina zwei Push-Benachrichtigungen am Tag (deutsche Zeit):
+#   10 Uhr – „Heute schon gelernt?“
+#   19 Uhr – Lob, wenn an dem Tag gelernt wurde (sonst ein lieber Gruß ohne Druck)
+# Je zwei Zeitpläne, weil GitHub in UTC rechnet (Sommer-/Winterzeit).
+# Das Skript schickt nur bei den Läufen, die gerade 10 bzw. 19 Uhr in Berlin entsprechen.
 #
 # Benötigte Secrets (Settings → Secrets and variables → Actions):
 #   VAPID_PRIVATE_KEY   – privater Schlüssel (nur einmal einrichten)
-#   PUSH_SUBSCRIPTIONS  – der Code aus der App („Code für Tobi“); mehrere Geräte als JSON-Liste [ {...}, {...} ]
+#   PUSH_SUBSCRIPTIONS  – der Code aus der App („Code an Tobi schicken“); mehrere Geräte als JSON-Liste [ {...}, {...} ]
 
 on:
   schedule:
-    - cron: '0 8 * * *'
-    - cron: '0 9 * * *'
+    - cron: '0 8 * * *'    # 10 Uhr Sommerzeit
+    - cron: '0 9 * * *'    # 10 Uhr Winterzeit
+    - cron: '0 17 * * *'   # 19 Uhr Sommerzeit
+    - cron: '0 18 * * *'   # 19 Uhr Winterzeit
   workflow_dispatch:
     inputs:
+      art:
+        description: 'Welche Nachricht?'
+        type: choice
+        options: [morgen, abend]
+        default: morgen
       text:
-        description: 'Eigener Text (leer lassen für die normale Erinnerung)'
+        description: 'Eigener Text (leer lassen für die normale Nachricht)'
         required: false
         default: ''
 
@@ -34,4 +43,5 @@ jobs:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
           SCHEDULE: ${{ github.event.schedule }}
+          ART: ${{ github.event.inputs.art }}
           TEXT: ${{ github.event.inputs.text }}
