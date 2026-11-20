@@ -3,21 +3,16 @@ name: Tägliche Erinnerung
 # Schickt Sabrina zwei Push-Benachrichtigungen am Tag (deutsche Zeit):
 #   10 Uhr – „Heute schon gelernt?“
 #   19 Uhr – Lob, wenn an dem Tag gelernt wurde (sonst ein lieber Gruß ohne Druck)
-# Je zwei Zeitpläne, weil GitHub in UTC rechnet (Sommer-/Winterzeit).
-# Das Skript schickt nur bei den Läufen, die gerade 10 bzw. 19 Uhr in Berlin entsprechen,
-# und lässt Läufe aus, die mehr als 90 Minuten zu spät starten (lieber keine Nachricht als eine um 1 Uhr nachts).
+# Ausgelöst wird der Workflow pünktlich von cron-job.org (zwei Aufgaben, 10:00 und 19:00 Europe/Berlin),
+# per POST an /repos/M4yh3m1c/MotivationApp/actions/workflows/erinnerung.yml/dispatches
+# mit {"ref":"main","inputs":{"art":"morgen"}} bzw. "abend".
+# GitHubs eigener Zeitplan (schedule) wird nicht genutzt: Der hat sich oft um Stunden verspätet.
 #
 # Benötigte Secrets (Settings → Secrets and variables → Actions):
 #   VAPID_PRIVATE_KEY   – privater Schlüssel (nur einmal einrichten)
 #   PUSH_SUBSCRIPTIONS  – der Code aus der App („Code an Tobi schicken“); mehrere Geräte als JSON-Liste [ {...}, {...} ]
 
 on:
-  schedule:
-    # Bewusst nicht zur vollen Stunde: Dann sind GitHubs Server überlastet und Läufe starten oft Stunden zu spät.
-    - cron: '7 8 * * *'    # 10:07 Uhr Sommerzeit
-    - cron: '7 9 * * *'    # 10:07 Uhr Winterzeit
-    - cron: '7 17 * * *'   # 19:07 Uhr Sommerzeit
-    - cron: '7 18 * * *'   # 19:07 Uhr Winterzeit
   workflow_dispatch:
     inputs:
       art:

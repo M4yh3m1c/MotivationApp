@@ -15,9 +15,7 @@ Ohne Lernzeit kommt abends ein lieber Gruß ohne Druck – iOS verlangt, dass je
 4. **Testen:** *Actions → Tägliche Erinnerung → Run workflow*. Dort „morgen“ oder „abend“ wählen, optional einen eigenen Text eingeben.
 
 Hinweise:
-- GitHub startet geplante Läufe nicht auf die Minute. Die Zeitpläne liegen deshalb auf :07 statt zur vollen Stunde, und Läufe mit mehr als 90 Minuten Verspätung schicken nichts (`MAX_VERSPAETUNG_MIN` im Skript).
+- Ausgelöst wird die Action von zwei Aufgaben bei **cron-job.org** (10:00 und 19:00 Uhr, Europe/Berlin): POST an `https://api.github.com/repos/M4yh3m1c/MotivationApp/actions/workflows/erinnerung.yml/dispatches` mit den Headern `Authorization: Bearer <Fine-grained Token mit Actions: Read and write>`, `Accept: application/vnd.github+json`, `Content-Type: application/json` und dem Body `{"ref":"main","inputs":{"art":"morgen"}}` bzw. `"abend"`. Der Token läuft am 19.11.2027 ab – dann einen neuen erstellen und bei beiden Aufgaben eintragen.
 - Wird die Erinnerung auf dem iPhone ausgeschaltet oder die App neu installiert, gibt es einen neuen Code. Dann Schritt 2 und 3 wiederholen.
   Schlägt der Versand fehl, schickt GitHub eine Mail über den fehlgeschlagenen Lauf.
-- GitHub pausiert geplante Actions in öffentlichen Repositories nach 60 Tagen ohne Commit. Dann unter *Actions* wieder aktivieren
-  oder einfach zwischendurch etwas ändern (zum Beispiel einen Spruch).
-- Uhrzeiten ändern: `ZEITEN` in `.github/scripts/erinnerung.mjs` (die Zeitpläne in `.github/workflows/erinnerung.yml` dann ebenfalls anpassen, je Uhrzeit einer für Sommer- und einer für Winterzeit).
+- Uhrzeiten ändern: direkt bei cron-job.org in den beiden Aufgaben.
