@@ -11,6 +11,7 @@ Gehostet über GitHub Pages, genutzt auf ihrem iPhone als Web-App auf dem Home-B
 - `.github/workflows/erinnerung.yml` + `.github/scripts/erinnerung.mjs` – Push um 10 Uhr Berlin (ausgelöst per workflow_dispatch von cron-job.org, kein GitHub-schedule mehr; „Heute schon gelernt?“) und 19 Uhr (Lob, ohne Lernzeit ein lieber Gruß – iOS braucht bei jedem Push eine sichtbare Nachricht); Secrets `VAPID_PRIVATE_KEY`, `PUSH_SUBSCRIPTIONS`; der öffentliche VAPID-Schlüssel steht in `index.html` und im Skript (müssen übereinstimmen). Einrichtung steht in README.md
 - `manifest.webmanifest`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` – Symbol und Vollbildmodus
 - Startzustand steht als JSON in `<script id="app-state">`; Fortschritt speichert die App im localStorage (`sabrina-endspurt-v1`)
+- Fokus-Timer: jede volle Minute wird sofort dem heutigen Tag gutgeschrieben (`timer.credited`), Timer-Stand im localStorage `sabrina-endspurt-timer`, damit die Zeit auch zählt, wenn iOS die App beendet; „Beenden“ trägt eine angefangene Minute ab 30 s mit ein
 - Sicherung: In den Einstellungen gibt es Export (JSON-Datei über das iOS-Teilen-Menü, sonst Download) und Import (ersetzt den Stand nach Rückfrage)
 - Der Code für `claude.use("artifact")` stammt aus der claude.ai-Version und ist auf GitHub Pages wirkungslos
 
